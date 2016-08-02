@@ -8,10 +8,23 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  image_transport
+  cv_bridge
 )
 
+
+
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
+
+find_package( OpenCV  REQUIRED COMPONENTS core highgui flann calib3d )
+
+ FIND_PACKAGE(Eigen3 REQUIRED)
+ include_directories(${EIGEN3_INCLUDE_DIR})
+
+# ceres solver from google
+find_package(Ceres REQUIRED)
+include_directories(${CERES_INCLUDE_DIRS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -89,7 +102,7 @@ find_package(catkin REQUIRED COMPONENTS
 #   cfg/DynReconf1.cfg
 #   cfg/DynReconf2.cfg
 # )
-
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -100,7 +113,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES edge_alignment
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
@@ -114,6 +127,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -128,16 +142,21 @@ include_directories(
 # add_dependencies(edge_alignment ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(edge_alignment_node src/edge_alignment_node.cpp)
+add_executable(edge_alignment_node
+    src/ea.cpp
+    include/ConcurrentQueue.h
+    include/Frame.h
+    src/Frame.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(edge_alignment_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(edge_alignment_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(edge_alignment_node
+   ${catkin_LIBRARIES}
+ )
 
 #############
 ## Install ##
