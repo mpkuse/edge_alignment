@@ -145,8 +145,8 @@ include
 add_executable(edge_alignment_node
     src/ea.cpp
     include/ConcurrentQueue.h
-    include/Frame.h
-    src/Frame.cpp
+    src/SolveEA.cpp
+    include/SolveEA.h
 )
 
 ## Add cmake target dependencies of the executable
