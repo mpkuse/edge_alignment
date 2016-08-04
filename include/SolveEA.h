@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cmath>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -24,8 +25,15 @@ public:
     void setRefFrame(const Mat &rgb, const Mat &depth);
     void setNowFrame(const Mat &rgb, const Mat &depth);
 
+    void setAsCERESProblem();
+
+    void _verify3dPts();
+
 
 private:
+    Matrix3d K; ///< Camera intrinsics at the resolution of input
+    double fx, fy, cx, cy; ///< same as `K`
+
     cv::Mat ref_im, ref_depth; ///< ref images
     cv::Mat now_im, now_depth; ///< now images
 
@@ -33,7 +41,14 @@ private:
 
     cv::Mat now_dist_transform;
     MatrixXd now_dist_transform_eig;
+    cv::Mat now_dist_transform_display;
 
     MatrixXd list_edge_ref; ///< List of x,y,z at edge pixels of ref image
+
+
+    // helpers
+    void cordList_2_mask(Eigen::MatrixXd &list, Eigen::MatrixXi &mask);
+    void cordList_2_mask(MatrixXd &list, cv::Mat &mask);
+    void sOverlay(const Mat &src, const Mat &mask, cv::Mat& dst, const Vec3b &color);
 };
 

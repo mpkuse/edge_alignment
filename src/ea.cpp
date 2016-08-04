@@ -190,11 +190,15 @@ int main( int argc, char ** argv )
     ea->setNowFrame( now_im, now_depth );
     TOC("now frame processed in ", start );
 
+    // Verify
+//    ea->_verify3dPts();
 
     // TODO.
     // use `now_dist_transform`, `list_edge_ref`, camera_intrinsics and set up a CERES problem
 
 
 
+
+    cv::waitKey(0);
 
 }
