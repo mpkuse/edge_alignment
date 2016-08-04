@@ -3,18 +3,32 @@
 #include <iostream>
 #include <cmath>
 
+// EIGEN - Linear Algebra
 #include <Eigen/Dense>
 #include <Eigen/Core>
 
+// OpenCV
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/core/eigen.hpp>
 
+// Ceres - Nonlinear Solver
+#include <ceres/ceres.h>
+#include <ceres/loss_function.h>
 
+#include <EAResidue.h>
 
 using namespace std;
 using namespace cv;
 using namespace Eigen;
+
+using ceres::AutoDiffCostFunction;
+using ceres::CostFunction;
+using ceres::LossFunction;
+using ceres::LossFunctionWrapper;
+using ceres::Problem;
+using ceres::Solver;
+using ceres::Solve;
 
 
 
@@ -27,7 +41,10 @@ public:
 
     void setAsCERESProblem();
 
+    // Testing/Verify Functions
     void _verify3dPts();
+    void _sampleCERESProblem();
+
 
 
 private:

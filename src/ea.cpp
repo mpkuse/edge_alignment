@@ -159,7 +159,7 @@ int main( int argc, char ** argv )
     ROS_INFO( "start");
     //read reference image
     char filename[500];
-    sprintf( filename, "%s/data/%d.xml", ros::package::getPath("edge_alignment").c_str(), 0 );
+    sprintf( filename, "%s/data/%d.xml", ros::package::getPath("edge_alignment").c_str(), 3 );
     fs.open( filename, cv::FileStorage::READ );
     cv::Mat ref_im, ref_depth;
     fs["im"] >> ref_im;
@@ -170,7 +170,7 @@ int main( int argc, char ** argv )
 
 
     //read now image
-    sprintf( filename, "%s/data/%d.xml", ros::package::getPath("edge_alignment").c_str(), 15 );
+    sprintf( filename, "%s/data/%d.xml", ros::package::getPath("edge_alignment").c_str(), 8 );
     fs.open( filename, cv::FileStorage::READ );
     cv::Mat now_im, now_depth;
     fs["im"] >> now_im;
@@ -191,10 +191,11 @@ int main( int argc, char ** argv )
     TOC("now frame processed in ", start );
 
     // Verify
-//    ea->_verify3dPts();
+    ea->_verify3dPts();
 
     // TODO.
     // use `now_dist_transform`, `list_edge_ref`, camera_intrinsics and set up a CERES problem
+    ea->_sampleCERESProblem();
 
 
 

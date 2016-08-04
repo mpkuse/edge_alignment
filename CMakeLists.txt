@@ -147,6 +147,7 @@ add_executable(edge_alignment_node
     include/ConcurrentQueue.h
     src/SolveEA.cpp
     include/SolveEA.h
+    include/EAResidue.h
 )
 
 ## Add cmake target dependencies of the executable
@@ -156,6 +157,7 @@ add_executable(edge_alignment_node
 ## Specify libraries to link a library or executable target against
 target_link_libraries(edge_alignment_node
    ${catkin_LIBRARIES}
+   ${CERES_LIBRARIES}
  )
 
 #############

@@ -122,8 +122,64 @@ void SolveEA::setNowFrame(const Mat &rgb, const Mat &depth)
 /// It is assumed that setRefFrame() and setNowFrame() have been called before calling this function
 /// TODO : set bool variables to be sure that above calls have been made before calling this function
 void SolveEA::setAsCERESProblem()
-{
+ {
 
+ }
+
+/// Sample CERES problem, to ensure it works
+void SolveEA::_sampleCERESProblem()
+{
+MatrixXd A = MatrixXd::Random( 34, 27 );
+
+// initial value
+double x_cap[27] = {50};
+for( int i=0 ; i<27 ; i++ ) x_cap[i]= 5;
+cout << "init values of x_init=[\n";
+for( int i=0 ; i<27 ; i++ )
+    cout << x_cap[i] << ", ";
+cout << "]';\n";
+Problem problem;
+
+LossFunction* loss_function = new ceres::HuberLoss(.10);
+
+problem.AddResidualBlock(
+            new AutoDiffCostFunction<Residue,34,27>( new Residue( A )  ),
+            loss_function,x_cap
+            );
+// evaluate cost function
+   double cost;
+   vector<double> all_residues;
+   problem.Evaluate(Problem::EvaluateOptions(), &cost, &all_residues, NULL, NULL );
+   cout << "cost : "<< cost << endl;
+   cout << "all_residues " << all_residues.size() << " = [";
+   for( int i=0 ; i<all_residues.size() ; i++ )
+       cout << all_residues[i] << ", ";
+   cout << "]\n";
+
+
+
+   cout << "NumParameterBlocks "<< problem.NumParameterBlocks() << endl;
+   cout << "NumParameters "<< problem.NumParameters() << endl;
+   cout << "NumResidualBlocks "<< problem.NumResidualBlocks() << endl;
+   cout << "NumResiduals "<< problem.NumResiduals() << endl;
+//    cout << "ParameterBlockSize "<< problem.ParameterBlockSize() << endl;
+//    cout << "ParameterBlockLocalSize. "<< problem.ParameterBlockLocalSize() << endl;
+
+
+
+   // setting up the solver
+   Solver::Options options;
+   options.max_num_iterations = 25;
+   options.linear_solver_type = ceres::DENSE_QR;
+   options.minimizer_progress_to_stdout = true;
+   Solver::Summary summary;
+   Solve(options, &problem, &summary);
+   std::cout << summary.BriefReport() << "\n";
+
+   cout << "final value of x_final=[\n";
+   for( int i=0 ; i<27 ; i++ )
+       cout << x_cap[i] << ", ";
+   cout << "]';\n";
 }
 
 /// @brief Verify the variable `list_edge_ref` ie a 3xN list of 3d points of reference frame.
@@ -151,12 +207,11 @@ void SolveEA::_verify3dPts()
 //    cv::Mat mask1;
 //    cv::eigen2cv( mask, mask1 );
     cv::Mat _overlay;
-    sOverlay( now_im, mask, _overlay, cv::Vec3b(0,0,255));
+    sOverlay( now_dist_transform_display, mask, _overlay, cv::Vec3b(0,0,255));
     cv::imshow( "mask", mask );
     cv::imshow( "_overlay", _overlay );
 
     cv::imshow( "distance_trans", now_dist_transform_display);
-
 }
 
 
@@ -199,9 +254,22 @@ void SolveEA::cordList_2_mask(MatrixXd &list, cv::Mat &mask)
 /// @brief Overlay a mask over an image
 void SolveEA::sOverlay(const Mat &src, const Mat &mask, Mat &dst, const Vec3b &color)
 {
-    assert( src.channels() == 3 && mask.rows == src.rows && mask.cols == src.cols && "SolveEA::sOverlay : sizes do not match");
+    assert( mask.rows == src.rows && mask.cols == src.cols && "SolveEA::sOverlay : sizes do not match");
 
-    dst = src.clone();
+    //if nChannels of src is not 3 (but 1), make it 3 channel
+    if( src.channels() == 1 )
+    {
+        std::vector<cv::Mat> ch;
+        ch.push_back(src);
+        ch.push_back(src);
+        ch.push_back(src);
+        cv::merge(ch,dst);
+    }
+    else if( src.channels() == 3 )
+        dst = src.clone();
+    else
+        std::cerr << "ERROR : SolveEA::sOverlay : input nChannels can be either 1 or 3 only. currently invalid value\n";
+
     for( int j=0 ; j<mask.cols ; j++ )
     {
         for( int i=0 ; i<mask.rows ; i++ )
