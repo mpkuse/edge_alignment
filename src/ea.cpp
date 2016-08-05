@@ -195,7 +195,8 @@ int main( int argc, char ** argv )
 
     // TODO.
     // use `now_dist_transform`, `list_edge_ref`, camera_intrinsics and set up a CERES problem
-    ea->_sampleCERESProblem();
+    //ea->_sampleCERESProblem();
+    ea->setAsCERESProblem();
 
 
 

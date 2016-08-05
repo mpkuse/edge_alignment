@@ -15,6 +15,7 @@
 // Ceres - Nonlinear Solver
 #include <ceres/ceres.h>
 #include <ceres/loss_function.h>
+//#include <ceres/cubic_interpolation.h>
 
 #include <EAResidue.h>
 

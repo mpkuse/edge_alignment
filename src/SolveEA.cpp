@@ -123,63 +123,152 @@ void SolveEA::setNowFrame(const Mat &rgb, const Mat &depth)
 /// TODO : set bool variables to be sure that above calls have been made before calling this function
 void SolveEA::setAsCERESProblem()
  {
+    //TODO : Better idea is to initialize the Solver once in the constructor and only
+    //set residue terms here. Solve in another function
+
+    // init
+    double q_cap[4] = {1,0,0,0};
+    double t_cap[3] = {0,0,0};
+    cout << "init values of q_init=[\n";
+    for( int i=0 ; i<4 ; i++ )
+        cout << q_cap[i] << ", ";
+    cout << "]';\n";
+
+    cout << "init values of t_init=[\n";
+    for( int i=0 ; i<3 ; i++ )
+        cout << t_cap[i] << ", ";
+    cout << "]';\n";
+
+
+    Problem problem;
+    LossFunction* loss_function = new ceres::HuberLoss(0.1);
+
+    // set residue
+    //CostFunction * cost_function = new AutoDiffCostFunction<EAResidue, 8322, 4, 3>(new EAResidue(list_edge_ref, now_dist_transform_eig, K));
+    //problem.AddResidualBlock(new AutoDiffCostFunction<EAResidue, 8322, 4, 3>(new EAResidue(list_edge_ref, now_dist_transform_eig, K)),
+    //                         NULL, q_cap, t_cap);
+
+    // make interpolator
+    ceres::Grid2D<double,2> grid( now_dist_transform_eig.data(), 0, now_dist_transform_eig.rows(), 0, now_dist_transform_eig.cols());
+//    ceres::Grid2D<double,1> grid( now_dist_transform_eig.data(), now_dist_transform_eig.rows(), now_dist_transform_eig.cols());
+    BiCubicInterpolator< Grid2D<double,2> > interpolated_cost_function(grid);
+
+    double f=0;
+    interpolated_cost_function.Evaluate( 200, 300, &f);
+    cout << "f_mat "<<  now_dist_transform_eig(300,200 ) << endl;
+    cout << "f " << f << endl;
+//    return ;
+
+    cout << "ir_max : "<< list_edge_ref.cols() << endl;
+    for( int ir=0 ; ir<list_edge_ref.cols() ; ir++ )
+    {
+        double curX, curY, curZ;
+        curX = list_edge_ref(0,ir);
+        curY = list_edge_ref(1,ir);
+        curZ = list_edge_ref(2,ir);
+
+        problem.AddResidualBlock( new AutoDiffCostFunction<EAResidue,1,4,3>( new EAResidue(curX,curY,curZ, interpolated_cost_function, K) ),
+                                  NULL,
+                                  q_cap,
+                                  t_cap
+                                  );
+    }
+
+
+
+    // local parameterization
+    LocalParameterization* local_parameterization = new ceres::QuaternionParameterization;
+    problem.SetParameterization(q_cap, local_parameterization);
+
+    // setting the solver
+    Solver::Options options;
+        options.max_num_iterations = 25;
+//    options.max_solver_time_in_seconds = 5;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.minimizer_progress_to_stdout = true;
+
+
+    options.minimizer_type = ceres::TRUST_REGION;
+    options.trust_region_strategy_type = ceres::DOGLEG;
+    //options.dogleg_type = ceres::SUBSPACE_DOGLEG;
+
+
+
+    Solver::Summary summary;
+    Solve(options, &problem, &summary);
+    //    std::cout << summary.BriefReport() << "\n";
+    std::cout << summary.FullReport() << "\n";
+
+
+
+    // print final vals
+    cout << "final values of q_init=[\n";
+    for( int i=0 ; i<4 ; i++ )
+        cout << q_cap[i] << ", ";
+    cout << "]';\n";
+
+    cout << "final values of t_init=[\n";
+    for( int i=0 ; i<3 ; i++ )
+        cout << t_cap[i] << ", ";
+    cout << "]';\n";
+
 
  }
 
 /// Sample CERES problem, to ensure it works
 void SolveEA::_sampleCERESProblem()
 {
-MatrixXd A = MatrixXd::Random( 34, 27 );
+    MatrixXd A = MatrixXd::Random( 34, 27 );
 
-// initial value
-double x_cap[27] = {50};
-for( int i=0 ; i<27 ; i++ ) x_cap[i]= 5;
-cout << "init values of x_init=[\n";
-for( int i=0 ; i<27 ; i++ )
-    cout << x_cap[i] << ", ";
-cout << "]';\n";
-Problem problem;
+    // initial value
+    double x_cap[27] = {50};
+    for( int i=0 ; i<27 ; i++ ) x_cap[i]= 5;
+    cout << "init values of x_init=[\n";
+    for( int i=0 ; i<27 ; i++ )
+        cout << x_cap[i] << ", ";
+    cout << "]';\n";
+    Problem problem;
 
-LossFunction* loss_function = new ceres::HuberLoss(.10);
+    LossFunction* loss_function = new ceres::HuberLoss(.10);
 
-problem.AddResidualBlock(
-            new AutoDiffCostFunction<Residue,34,27>( new Residue( A )  ),
-            loss_function,x_cap
-            );
-// evaluate cost function
-   double cost;
-   vector<double> all_residues;
-   problem.Evaluate(Problem::EvaluateOptions(), &cost, &all_residues, NULL, NULL );
-   cout << "cost : "<< cost << endl;
-   cout << "all_residues " << all_residues.size() << " = [";
-   for( int i=0 ; i<all_residues.size() ; i++ )
-       cout << all_residues[i] << ", ";
-   cout << "]\n";
-
-
-
-   cout << "NumParameterBlocks "<< problem.NumParameterBlocks() << endl;
-   cout << "NumParameters "<< problem.NumParameters() << endl;
-   cout << "NumResidualBlocks "<< problem.NumResidualBlocks() << endl;
-   cout << "NumResiduals "<< problem.NumResiduals() << endl;
-//    cout << "ParameterBlockSize "<< problem.ParameterBlockSize() << endl;
-//    cout << "ParameterBlockLocalSize. "<< problem.ParameterBlockLocalSize() << endl;
+    problem.AddResidualBlock(
+                new AutoDiffCostFunction<Residue,34,27>( new Residue( A )  ),
+                loss_function,x_cap
+                );
+    // evaluate cost function
+    double cost;
+    vector<double> all_residues;
+    problem.Evaluate(Problem::EvaluateOptions(), &cost, &all_residues, NULL, NULL );
+    cout << "cost : "<< cost << endl;
+    cout << "all_residues " << all_residues.size() << " = [";
+    for( int i=0 ; i<all_residues.size() ; i++ )
+        cout << all_residues[i] << ", ";
+    cout << "]\n";
 
 
 
-   // setting up the solver
-   Solver::Options options;
-   options.max_num_iterations = 25;
-   options.linear_solver_type = ceres::DENSE_QR;
-   options.minimizer_progress_to_stdout = true;
-   Solver::Summary summary;
-   Solve(options, &problem, &summary);
-   std::cout << summary.BriefReport() << "\n";
+    cout << "NumParameterBlocks "<< problem.NumParameterBlocks() << endl;
+    cout << "NumParameters "<< problem.NumParameters() << endl;
+    cout << "NumResidualBlocks "<< problem.NumResidualBlocks() << endl;
+    cout << "NumResiduals "<< problem.NumResiduals() << endl;
+    //    cout << "ParameterBlockSize "<< problem.ParameterBlockSize() << endl;
+    //    cout << "ParameterBlockLocalSize. "<< problem.ParameterBlockLocalSize() << endl;
 
-   cout << "final value of x_final=[\n";
-   for( int i=0 ; i<27 ; i++ )
-       cout << x_cap[i] << ", ";
-   cout << "]';\n";
+
+
+    // setting up the solver
+    Solver::Options options;
+    options.max_num_iterations = 25;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.minimizer_progress_to_stdout = true;
+    Solver::Summary summary;
+    Solve(options, &problem, &summary);
+    std::cout << summary.BriefReport() << "\n";
+
+    cout << "final value of x_final=[\n";
+    for( int i=0 ; i<27 ; i++ )
+        cout << x_cap[i] << ", ";
+    cout << "]';\n";
 }
 
 /// @brief Verify the variable `list_edge_ref` ie a 3xN list of 3d points of reference frame.
@@ -212,6 +301,8 @@ void SolveEA::_verify3dPts()
     cv::imshow( "_overlay", _overlay );
 
     cv::imshow( "distance_trans", now_dist_transform_display);
+
+    cout << "# of 3d points in list : "<< list_edge_ref.cols()<< endl;
 }
 
 
