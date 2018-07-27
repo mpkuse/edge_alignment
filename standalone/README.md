@@ -19,7 +19,8 @@ $ ./edge_align
 
 ## How long it takes to run per image pair ?
 Roughly speaking, with my inefficient ceres implementation takes
-~60ms with 1500 residue terms. There definately is a lot of potential
+~60ms with 1500 residue terms of a 640x480 image and ~30 iterations.
+There definately is a lot of potential
 to improve its performance. Contributions welcome!
 
 Here is my solver summary:
